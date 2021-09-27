@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./target/debug/dockron hello hi
+echo "piped input" | ./target/debug/dockron ./test.sh hello hi
