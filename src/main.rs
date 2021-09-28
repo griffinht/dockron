@@ -63,5 +63,5 @@ fn main() {
         i += 1;
     }
 
-    if verbose { eprintln!("Done") }
+    if verbose { eprintln!("Finished running {}", program) }
 }
