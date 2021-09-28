@@ -34,6 +34,12 @@ fn main() {
             }
         }
     }
+
+    let n = n;
+    let delay = delay;
+    let verbose = verbose;
+    let ignore = ignore;
+
     if verbose { eprintln!("Running {} {} times with a {}ms delay with arguments {:?}", program, n, delay, args); }
     let mut command = std::process::Command::new(program.as_str()); // program name
     let command = command.args(args);
