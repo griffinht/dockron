@@ -17,10 +17,10 @@ fn main() {
         let arg = arg.as_str();
         match arg {
             "n" => {
-                n = args.get(0).unwrap().parse().unwrap();
+                n = args.remove(0).parse().unwrap();
             }
             "d" => {
-                delay = args.get(0).unwrap().parse().unwrap();
+                delay = args.remove(0).parse().unwrap();
             }
             "v" => {
                 verbose = true;
