@@ -1,8 +1,8 @@
 fn main() {
     let mut n = 1; // amount of times to run
     let mut delay = 0; // delay for runs except for the first
-    let mut verbose = false;
-    let mut ignore = false;
+    let mut verbose = false; // verbose logging to stderr
+    let mut ignore = false; // ignore non zero exit codes
 
     let mut args: Vec<String> = std::env::args().collect();
     args.remove(0); // first arg is irrelevant?
