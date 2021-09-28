@@ -37,7 +37,7 @@ fn main() {
     if verbose { eprintln!("Running {} {} times with a {}ms delay with arguments {:?}", program, n, delay, args); }
     let mut command = std::process::Command::new(program.as_str()); // program name
     let command = command.args(args);
-    for i in 0..n {
+    for i in 1..n + 1 {
         if verbose { eprintln!("Running {}... ({}/{})", program, i, n) }
         let mut result = command.spawn().unwrap();
 
@@ -53,7 +53,7 @@ fn main() {
             std::process::exit(code);
         }
 
-        if i + 1 < n {
+        if i < n {
             if verbose { eprintln!("Waiting {}ms for next run...", delay) }
             std::thread::sleep(std::time::Duration::from_millis(delay));
         }
