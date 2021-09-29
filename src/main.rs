@@ -6,10 +6,9 @@ fn main() {
 
     let mut args: Vec<String> = std::env::args().collect();
     args.remove(0); // first arg is irrelevant?
-    let program = args.remove(0);
-    while args.get(0).unwrap().starts_with("-") {
+    while args.len() > 0 && args.get(0).unwrap().starts_with("-") {
         let arg = args
-            .remove(0) // pop --arg
+            .remove(0) // pop -arg
             .chars()
             .nth(1)// trim to arg
             .unwrap()
@@ -17,10 +16,32 @@ fn main() {
         let arg = arg.as_str();
         match arg {
             "n" => {
-                n = args.remove(0).parse().unwrap();
+                if args.len() == 0 {
+                    eprintln!("please specify how many times to run with -n <integer>");
+                    std::process::exit(1)
+                }
+                let str = args.remove(0);
+                n = match str.parse() {
+                    Ok(str) => str,
+                    Err(error) => {
+                        eprintln!("error while parsing -n {} as integer\n{}", str, error);
+                        std::process::exit(1);
+                    }
+                }
             }
             "d" => {
-                delay = args.remove(0).parse().unwrap();
+                if args.len() == 0 {
+                    eprintln!("please specify delay with -d <integer> (milliseconds)");
+                    std::process::exit(1)
+                }
+                let str = args.remove(0);
+                delay = match str.parse() {
+                    Ok(str) => str,
+                    Err(error) => {
+                        eprintln!("error while parsing -d {} as integer\n{}", str, error);
+                        std::process::exit(1);
+                    }
+                }
             }
             "v" => {
                 verbose = true;
@@ -34,6 +55,11 @@ fn main() {
             }
         }
     }
+    if args.len() == 0 {
+        eprintln!("please specify a program to run");
+        std::process::exit(1);
+    }
+    let program = args.remove(0);
     if verbose { eprintln!("Running {} {} times with a {}ms delay with arguments {:?}", program, n, delay, args); }
     let mut command = std::process::Command::new(program.as_str()); // program name
     let command = command.args(args);
@@ -42,9 +68,15 @@ fn main() {
         // negative n should run infinitely
         if n >= 0 && i > n { break }
         if verbose { eprintln!("Running {}... ({}/{})", program, i, n) }
-        let mut result = command.spawn().unwrap();
+        let mut child = match command.spawn() {
+            Ok(child) => child,
+            Err(error) => {
+                eprintln!("error while spawning program {}\n{}", program, error.to_string());
+                std::process::exit(1)
+            }
+        };
 
-        let status = result
+        let status = child
             .wait()
             .unwrap();
 
