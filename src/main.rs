@@ -1,3 +1,12 @@
+macro_rules! arg_check {
+    ($length:expr, $message:tt) => {
+        if $length == 0 {
+            eprintln!("{}", $message);
+            std::process::exit(1);
+        }
+    };
+}
+
 fn main() {
     let mut n = 1; // amount of times to run
     let mut delay = 0; // delay for runs except for the first
@@ -16,10 +25,7 @@ fn main() {
         let arg = arg.as_str();
         match arg {
             "n" => {
-                if args.len() == 0 {
-                    eprintln!("please specify how many times to run with -n <integer>");
-                    std::process::exit(1)
-                }
+                arg_check!(args.len(), "please specify how many times to run with -n <integer>");
                 let str = args.remove(0);
                 n = match str.parse() {
                     Ok(str) => str,
@@ -30,10 +36,7 @@ fn main() {
                 }
             }
             "d" => {
-                if args.len() == 0 {
-                    eprintln!("please specify delay with -d <integer> (milliseconds)");
-                    std::process::exit(1)
-                }
+                arg_check!(args.len(), "please specify delay with -d <integer> (milliseconds)");
                 let str = args.remove(0);
                 delay = match str.parse() {
                     Ok(str) => str,
