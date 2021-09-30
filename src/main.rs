@@ -1,4 +1,4 @@
-macro_rules! ensure_greater_than_zero {
+macro_rules! get_first_element {
     ($vector:expr, $message:tt) => {
         {|| {
             if $vector.len() == 0 {
@@ -8,6 +8,18 @@ macro_rules! ensure_greater_than_zero {
             return $vector.remove(0);
         }}()
     };
+}
+
+macro_rules! parse {
+    ($str:tt) => {
+        match $str.parse() {
+            Ok(result) => result,
+            Err(error) => {
+                eprintln!("error while parsing -d {} as integer\n{}", $str, error);
+                std::process::exit(1);
+            }
+        }
+    }
 }
 
 fn main() {
@@ -28,24 +40,12 @@ fn main() {
         let arg = arg.as_str();
         match arg {
             "n" => {
-                let str = ensure_greater_than_zero!(args, "please specify how many times to run with -n <integer>");
-                n = match str.parse() {
-                    Ok(str) => str,
-                    Err(error) => {
-                        eprintln!("error while parsing -n {} as integer\n{}", str, error);
-                        std::process::exit(1);
-                    }
-                }
+                let str = get_first_element!(args, "please specify how many times to run with -n <integer>");
+                n = parse!(str);
             }
             "d" => {
-                let str = ensure_greater_than_zero!(args, "please specify delay with -d <integer> (milliseconds)");
-                delay = match str.parse() {
-                    Ok(str) => str,
-                    Err(error) => {
-                        eprintln!("error while parsing -d {} as integer\n{}", str, error);
-                        std::process::exit(1);
-                    }
-                }
+                let str = get_first_element!(args, "please specify delay with -d <integer> (milliseconds)");
+                delay = parse!(str);
             }
             "v" => {
                 verbose = true;
@@ -59,7 +59,7 @@ fn main() {
             }
         }
     }
-    let program = ensure_greater_than_zero!(args, "please specify a program to run");
+    let program = get_first_element!(args, "please specify a program to run");
     if verbose { eprintln!("Running {} {} times with a {}ms delay with arguments {:?}", program, n, delay, args); }
     let mut command = std::process::Command::new(program.as_str()); // program name
     let command = command.args(args);
