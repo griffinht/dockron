@@ -1,9 +1,12 @@
 macro_rules! ensure_greater_than_zero {
-    ($length:expr, $message:tt) => {
-        if $length == 0 {
-            eprintln!("{}", $message);
-            std::process::exit(1);
-        }
+    ($vector:expr, $message:tt) => {
+        {|| {
+            if $vector.len() == 0 {
+                eprintln!("{}", $message);
+                std::process::exit(1);
+            }
+            return $vector.remove(0);
+        }}()
     };
 }
 
@@ -25,8 +28,7 @@ fn main() {
         let arg = arg.as_str();
         match arg {
             "n" => {
-                ensure_greater_than_zero!(args.len(), "please specify how many times to run with -n <integer>");
-                let str = args.remove(0);
+                let str = ensure_greater_than_zero!(args, "please specify how many times to run with -n <integer>");
                 n = match str.parse() {
                     Ok(str) => str,
                     Err(error) => {
@@ -36,8 +38,7 @@ fn main() {
                 }
             }
             "d" => {
-                ensure_greater_than_zero!(args.len(), "please specify delay with -d <integer> (milliseconds)");
-                let str = args.remove(0);
+                let str = ensure_greater_than_zero!(args, "please specify delay with -d <integer> (milliseconds)");
                 delay = match str.parse() {
                     Ok(str) => str,
                     Err(error) => {
@@ -58,8 +59,7 @@ fn main() {
             }
         }
     }
-    ensure_greater_than_zero!(args.len(), "please specify a program to run");
-    let program = args.remove(0);
+    let program = ensure_greater_than_zero!(args, "please specify a program to run");
     if verbose { eprintln!("Running {} {} times with a {}ms delay with arguments {:?}", program, n, delay, args); }
     let mut command = std::process::Command::new(program.as_str()); // program name
     let command = command.args(args);
