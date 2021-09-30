@@ -9,7 +9,7 @@ macro_rules! get_first_element {
         }}()
     };
 }
-//test
+
 fn main() {
     let mut n = 1; // amount of times to run
     let mut delay = 0; // delay for runs except for the first
