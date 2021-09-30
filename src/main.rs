@@ -10,18 +10,6 @@ macro_rules! get_first_element {
     };
 }
 
-macro_rules! parse {
-    ($str:tt) => {
-        match $str.parse() {
-            Ok(result) => result,
-            Err(error) => {
-                eprintln!("error while parsing -d {} as integer\n{}", $str, error);
-                std::process::exit(1);
-            }
-        }
-    }
-}
-
 fn main() {
     let mut n = 1; // amount of times to run
     let mut delay = 0; // delay for runs except for the first
@@ -38,6 +26,19 @@ fn main() {
             .unwrap()
             .to_string();
         let arg = arg.as_str();
+
+        macro_rules! parse {
+            ($str:tt) => {
+                match $str.parse() {
+                    Ok(result) => result,
+                    Err(error) => {
+                        eprintln!("error while parsing -d {} as integer\n{}", $str, error);
+                        std::process::exit(1);
+                    }
+                }
+            }
+        }
+
         match arg {
             "n" => {
                 let str = get_first_element!(args, "please specify how many times to run with -n <integer>");
