@@ -94,7 +94,7 @@ fn get_args_from_env(mut args_vec: Vec<String>) -> Args {
             }
         }
     }
-    args.program = get_first_element!(args_vec, "please specify a program to run");
+    args.program = get_first_element!(args_vec, "please specify a program to run or a file to read from");
     return args;
 }
 
