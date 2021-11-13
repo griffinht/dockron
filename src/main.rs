@@ -12,7 +12,7 @@ macro_rules! get_first_element {
     };
 }
 
-struct Args {
+struct Options {
     n: i32, // amount of times to run
     delay: u64, // delay for runs except for the first
     verbose: bool, // verbose logging to stderr
@@ -20,7 +20,7 @@ struct Args {
     program: String,
     args: Vec<String>,
 }
-impl std::fmt::Display for Args {
+impl std::fmt::Display for Options {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "n: {}, delay: {}, verbose: {}, ignore: {}, program: {}, args: {:?}", self.n, self.delay, self.verbose, self.ignore, self.program, self.args)
     }
@@ -39,27 +39,10 @@ macro_rules! default_args {
     }
 }
 
-fn get_args_from_file(_file: std::fs::File) -> Args {
-    let env_args = Vec::new();
-
-    return get_args_from_env(env_args)
-}
-fn get_args_from_args(env_args: std::env::Args) -> Args {
-    let mut args: Vec<String> = env_args.collect();
-    args.remove(0); // first arg is irrelevant?
-    return get_args_from_env(args);
-}
-fn get_args_from_env(mut args_vec: Vec<String>) -> Args {
+fn get_options(options: Options) -> MOptions {
     let mut args = default_args!();
 
     while args_vec.len() > 0 && args_vec.get(0).unwrap().starts_with("-") {
-        let arg = args_vec
-            .remove(0) // pop -arg
-            .chars()
-            .nth(1)// trim to arg
-            .unwrap()
-            .to_string();
-        let arg = arg.as_str();
 
         macro_rules! parse {
             ($str:tt) => {
@@ -98,18 +81,68 @@ fn get_args_from_env(mut args_vec: Vec<String>) -> Args {
     return args;
 }
 
+struct Option {
+    name: String,
+    value: std::option<String>,
+}
+struct Argument {
+    options: Vec<Option>,
+    argument: std::option<String>,
+}
+
+fn parse_args(mut raw_args: Vec<String>) -> Argument {
+    let mut options = Vec::new();
+    loop {
+        if raw_args.len() == 0 { break }
+        let mut raw_arg = raw_args
+            .remove(0)
+            .chars();
+        let arg;
+        if raw_arg[0] != '-' {
+            break
+        }
+        if raw_arg[1] == '-' { // --arg to arg
+            arg = raw_arg.nth(2);
+        } else {
+            arg = raw_arg.nth(1); // -arg to arg
+        }
+
+        options.push(
+            Option {
+                name: arg.unwrap().to_string(),
+                value:
+                if raw_args.len() > 0 {
+                    value = Some(raw_args.remove(0))
+                } else {
+                    value = None
+                }
+            });
+    }
+    return Argument { options,
+        argument:
+        if raw_args.len() > 0 {
+            Some(raw_args.remove(0))
+        } else {
+            None
+        }
+    };
+}
+
 fn main() {
-    let env_args = std::env::args();
-    let args: Args;
+    let mut args: Vec<String> = std::env::args().collect();
+    args.remove(0); // first arg is irrelevant?
+    let args = parse_args(args);
+
+    let options: Options;
     match env_args.len() {
         1 => {
             // no args, so look for default file
             match std::fs::File::open(DEFAULT_FILE_NAME) {
                 Ok(file) => {
-                    args = get_args_from_file(file);
+                    options = get_args_from_file(file);
                 },
                 Err(_error) => { // otherwise just try to run with command line arguments
-                    args = get_args_from_args(env_args);
+                    options = get_args_from_args(env_args);
                 }
             };
         }
@@ -124,26 +157,26 @@ fn main() {
                     std::process::exit(1)
                 }
             };
-            args = get_args_from_file(file);
+            options = get_args_from_file(file);
         }
         _ => {
             // command line args
-            args = get_args_from_args(env_args);
+            options = get_args_from_args(env_args);
         }
     }
 
-    if args.verbose { eprintln!("{}", args); }
-    let mut command = std::process::Command::new(args.program.as_str()); // program name
-    let command = command.args(args.args);
+    if options.verbose { eprintln!("{}", options); }
+    let mut command = std::process::Command::new(options.program.as_str()); // program name
+    let command = command.args(options.args);
     let mut i = 1;
     loop {
         // negative n should run infinitely
-        if args.n >= 0 && i > args.n { break }
-        if args.verbose { eprintln!("Running {}... ({}/{})", args.program, i, args.n) }
+        if options.n >= 0 && i > options.n { break }
+        if options.verbose { eprintln!("Running {}... ({}/{})", options.program, i, options.n) }
         let mut child = match command.spawn() {
             Ok(child) => child,
             Err(error) => {
-                eprintln!("error while spawning program {}\n{}", args.program, error.to_string());
+                eprintln!("error while spawning program {}\n{}", options.program, error.to_string());
                 std::process::exit(1)
             }
         };
@@ -153,19 +186,19 @@ fn main() {
             .unwrap();
 
         let code = status.code().unwrap();
-        if args.verbose { eprintln!("{} exited with code {}", args.program, code) }
+        if options.verbose { eprintln!("{} exited with code {}", options.program, code) }
 
-        if !args.ignore && code != 0 {
-            if args.verbose { eprintln!("Non-zero exit code, exiting... (-i to ignore non-zero exit codes)") }
+        if !options.ignore && code != 0 {
+            if options.verbose { eprintln!("Non-zero exit code, exiting... (-i to ignore non-zero exit codes)") }
             std::process::exit(code);
         }
 
-        if args.n < 0 || i < args.n {
-            if args.verbose { eprintln!("Waiting {}ms for next run...", args.delay) }
-            std::thread::sleep(std::time::Duration::from_millis(args.delay));
+        if options.n < 0 || i < options.n {
+            if options.verbose { eprintln!("Waiting {}ms for next run...", options.delay) }
+            std::thread::sleep(std::time::Duration::from_millis(options.delay));
         }
         i += 1;
     }
 
-    if args.verbose { eprintln!("Finished running {}", args.program) }
+    if options.verbose { eprintln!("Finished running {}", options.program) }
 }
