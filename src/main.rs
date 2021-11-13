@@ -1,3 +1,5 @@
+const DEFAULT_FILE_NAME: &str = "dockron";
+
 macro_rules! get_first_element {
     ($vector:expr, $message:tt) => {
         {|| {
@@ -37,12 +39,16 @@ macro_rules! default_args {
     }
 }
 
-fn get_args_from_file(file: std::fs::File) -> Args {
+fn get_args_from_file(_file: std::fs::File) -> Args {
     let env_args = Vec::new();
 
     return get_args_from_env(env_args)
 }
-
+fn get_args_from_args(env_args: std::env::Args) -> Args {
+    let mut args: Vec<String> = env_args.collect();
+    args.remove(0); // first arg is irrelevant?
+    return get_args_from_env(args);
+}
 fn get_args_from_env(mut args_vec: Vec<String>) -> Args {
     let mut args = default_args!();
 
@@ -92,33 +98,37 @@ fn get_args_from_env(mut args_vec: Vec<String>) -> Args {
     return args;
 }
 
-
 fn main() {
     let env_args = std::env::args();
     let args: Args;
     match env_args.len() {
         1 => {
-            // no args, so look for dockron file or use default args
-            let file = match std::fs::File::open("dockron") {
-                Ok(_) => {}
-                Err(_) => {}
+            // no args, so look for default file
+            match std::fs::File::open(DEFAULT_FILE_NAME) {
+                Ok(file) => {
+                    args = get_args_from_file(file);
+                },
+                Err(_error) => { // otherwise just try to run with command line arguments
+                    args = get_args_from_args(env_args);
+                }
             };
-            let mut args_vec: Vec<String> = env_args.collect();
-            args_vec.remove(0); // first arg is irrelevant?
-            args = get_args_from_env(args_vec);
         }
         2 => {
             // dockron file specified, so look for that
             let mut env_args = env_args;
-            let path = env_args.nth(2).unwrap();
-            let file = std::fs::File::open(path).expect("unable to open file todo print what file");
+            let path = env_args.nth(1).unwrap();
+            let file = match std::fs::File::open(path.as_str()) {
+                Ok(file) => file,
+                Err(error) => {
+                    eprintln!("error while opening file {}\n{}", path, error);
+                    std::process::exit(1)
+                }
+            };
             args = get_args_from_file(file);
         }
         _ => {
             // command line args
-            let mut args_vec: Vec<String> = env_args.collect();
-            args_vec.remove(0); // first arg is irrelevant?
-            args = get_args_from_env(args_vec);
+            args = get_args_from_args(env_args);
         }
     }
 
