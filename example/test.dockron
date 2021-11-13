@@ -1,0 +1,4 @@
+# test dockron file
+# lines that start with # are ignored
+# everything else will be concatenated as arguments
+-v -i -n 5 -d 100 ./test_script.sh hello hi > output

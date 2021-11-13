@@ -10,16 +10,44 @@ macro_rules! get_first_element {
     };
 }
 
-fn main() {
-    let mut n = 1; // amount of times to run
-    let mut delay = 0; // delay for runs except for the first
-    let mut verbose = false; // verbose logging to stderr
-    let mut ignore = false; // ignore non zero exit codes
+struct Args {
+    n: i32, // amount of times to run
+    delay: u64, // delay for runs except for the first
+    verbose: bool, // verbose logging to stderr
+    ignore: bool, // ignore non zero exit codes
+    program: String,
+    args: Vec<String>,
+}
+impl std::fmt::Display for Args {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "n: {}, delay: {}, verbose: {}, ignore: {}, program: {}, args: {:?}", self.n, self.delay, self.verbose, self.ignore, self.program, self.args)
+    }
+}
 
-    let mut args: Vec<String> = std::env::args().collect();
-    args.remove(0); // first arg is irrelevant?
-    while args.len() > 0 && args.get(0).unwrap().starts_with("-") {
-        let arg = args
+macro_rules! default_args {
+    () => {
+        Args {
+            n: 1,
+            delay: 0,
+            verbose: false,
+            ignore: false,
+            program: String::new(),
+            args: Vec::new(),
+        };
+    }
+}
+
+fn get_args_from_file(file: std::fs::File) -> Args {
+    let env_args = Vec::new();
+
+    return get_args_from_env(env_args)
+}
+
+fn get_args_from_env(mut args_vec: Vec<String>) -> Args {
+    let mut args = default_args!();
+
+    while args_vec.len() > 0 && args_vec.get(0).unwrap().starts_with("-") {
+        let arg = args_vec
             .remove(0) // pop -arg
             .chars()
             .nth(1)// trim to arg
@@ -41,18 +69,18 @@ fn main() {
 
         match arg {
             "n" => {
-                let str = get_first_element!(args, "please specify how many times to run with -n <integer>");
-                n = parse!(str);
+                let str = get_first_element!(args_vec, "please specify how many times to run with -n <integer>");
+                args.n = parse!(str);
             }
             "d" => {
-                let str = get_first_element!(args, "please specify delay with -d <integer> (milliseconds)");
-                delay = parse!(str);
+                let str = get_first_element!(args_vec, "please specify delay with -d <integer> (milliseconds)");
+                args.delay = parse!(str);
             }
             "v" => {
-                verbose = true;
+                args.verbose = true;
             }
             "i" => {
-                ignore = true;
+                args.ignore = true;
             }
             _=> {
                 eprintln!("unknown argument {}", arg);
@@ -60,19 +88,52 @@ fn main() {
             }
         }
     }
-    let program = get_first_element!(args, "please specify a program to run");
-    if verbose { eprintln!("Running {} {} times with a {}ms delay with arguments {:?}", program, n, delay, args); }
-    let mut command = std::process::Command::new(program.as_str()); // program name
-    let command = command.args(args);
+    args.program = get_first_element!(args_vec, "please specify a program to run");
+    return args;
+}
+
+
+fn main() {
+    let env_args = std::env::args();
+    let args: Args;
+    match env_args.len() {
+        1 => {
+            // no args, so look for dockron file or use default args
+            let file = match std::fs::File::open("dockron") {
+                Ok(_) => {}
+                Err(_) => {}
+            };
+            let mut args_vec: Vec<String> = env_args.collect();
+            args_vec.remove(0); // first arg is irrelevant?
+            args = get_args_from_env(args_vec);
+        }
+        2 => {
+            // dockron file specified, so look for that
+            let mut env_args = env_args;
+            let path = env_args.nth(2).unwrap();
+            let file = std::fs::File::open(path).expect("unable to open file todo print what file");
+            args = get_args_from_file(file);
+        }
+        _ => {
+            // command line args
+            let mut args_vec: Vec<String> = env_args.collect();
+            args_vec.remove(0); // first arg is irrelevant?
+            args = get_args_from_env(args_vec);
+        }
+    }
+
+    if args.verbose { eprintln!("{}", args); }
+    let mut command = std::process::Command::new(args.program.as_str()); // program name
+    let command = command.args(args.args);
     let mut i = 1;
     loop {
         // negative n should run infinitely
-        if n >= 0 && i > n { break }
-        if verbose { eprintln!("Running {}... ({}/{})", program, i, n) }
+        if args.n >= 0 && i > args.n { break }
+        if args.verbose { eprintln!("Running {}... ({}/{})", args.program, i, args.n) }
         let mut child = match command.spawn() {
             Ok(child) => child,
             Err(error) => {
-                eprintln!("error while spawning program {}\n{}", program, error.to_string());
+                eprintln!("error while spawning program {}\n{}", args.program, error.to_string());
                 std::process::exit(1)
             }
         };
@@ -82,19 +143,19 @@ fn main() {
             .unwrap();
 
         let code = status.code().unwrap();
-        if verbose { eprintln!("{} exited with code {}", program, code) }
+        if args.verbose { eprintln!("{} exited with code {}", args.program, code) }
 
-        if !ignore && code != 0 {
-            if verbose { eprintln!("Non-zero exit code, exiting... (-i to ignore non-zero exit codes)") }
+        if !args.ignore && code != 0 {
+            if args.verbose { eprintln!("Non-zero exit code, exiting... (-i to ignore non-zero exit codes)") }
             std::process::exit(code);
         }
 
-        if n < 0 || i < n {
-            if verbose { eprintln!("Waiting {}ms for next run...", delay) }
-            std::thread::sleep(std::time::Duration::from_millis(delay));
+        if args.n < 0 || i < args.n {
+            if args.verbose { eprintln!("Waiting {}ms for next run...", args.delay) }
+            std::thread::sleep(std::time::Duration::from_millis(args.delay));
         }
         i += 1;
     }
 
-    if verbose { eprintln!("Finished running {}", program) }
+    if args.verbose { eprintln!("Finished running {}", args.program) }
 }
