@@ -1,14 +1,4 @@
-macro_rules! get_first_element {
-    ($vector:expr, $message:tt) => {
-        {|| {
-            if $vector.len() == 0 {
-                eprintln!("{}", $message);
-                std::process::exit(1);
-            }
-            return $vector.remove(0);
-        }}()
-    };
-}
+use crate::arguments;
 
 pub struct Options {
     pub n: i32, // amount of times to run
@@ -24,9 +14,9 @@ impl std::fmt::Display for Options {
     }
 }
 
-macro_rules! default_args {
+macro_rules! default_options {
     () => {
-        Args {
+        Options {
             n: 1,
             delay: 0,
             verbose: false,
@@ -37,44 +27,59 @@ macro_rules! default_args {
     }
 }
 
-pub fn get_options(options: Options) -> MOptions {
-    let mut args = default_args!();
-
-    while args_vec.len() > 0 && args_vec.get(0).unwrap().starts_with("-") {
-
-        macro_rules! parse {
-            ($str:tt) => {
-                match $str.parse() {
-                    Ok(result) => result,
-                    Err(error) => {
-                        eprintln!("error while parsing -d {} as integer\n{}", $str, error);
-                        std::process::exit(1);
-                    }
-                }
-            }
+fn parse<F: std::str::FromStr>(str: String) -> F {
+    return match str.parse() {
+        Ok(result) => result,
+        Err(error) => {
+            eprintln!("error while parsing -d {} as integer\n{}", str, str);
+            std::process::exit(1);
         }
+    }
+}
 
-        match arg {
+pub fn get_options(arguments: arguments::Arguments) -> Options {
+    let mut options = default_options!();
+
+    for option in arguments.options {
+        match option.name.as_str() {
             "n" => {
-                let str = get_first_element!(args_vec, "please specify how many times to run with -n <integer>");
-                args.n = parse!(str);
+                let value = match option.value {
+                    Some(value) => value,
+                    None => {
+                        eprintln!("please specify how many times to run with -n <integer>");
+                        std::process::exit(1)
+                    }
+                };
+                options.n = parse(value);
             }
             "d" => {
-                let str = get_first_element!(args_vec, "please specify delay with -d <integer> (milliseconds)");
-                args.delay = parse!(str);
+                let value = match option.value {
+                    Some(value) => value,
+                    None => {
+                        eprintln!("please specify delay with -d <integer> (milliseconds)");
+                        std::process::exit(1)
+                    }
+                };
+                options.delay = parse(value);
             }
             "v" => {
-                args.verbose = true;
+                options.verbose = true;
             }
             "i" => {
-                args.ignore = true;
+                options.ignore = true;
             }
             _=> {
-                eprintln!("unknown argument {}", arg);
+                eprintln!("unknown argument {}", option.name);
                 std::process::exit(1);
             }
         }
     }
-    args.program = get_first_element!(args_vec, "please specify a program to run or a file to read from");
-    return args;
+    options.program = match arguments.argument{
+        Some(program) => program,
+        None => {
+            eprintln!("please specify a program to run or a file to read from");
+            std::process::exit(1)
+        }
+    };
+    return options;
 }

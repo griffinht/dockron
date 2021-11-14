@@ -1,15 +1,14 @@
-mod args;
+mod arguments;
 mod options;
-
-const DEFAULT_FILE_NAME: &str = "dockron";
 
 fn main() {
     let mut args: Vec<String> = std::env::args().collect();
     args.remove(0); // first arg is irrelevant?
-    let args = args::parse_args(args);
+    let arguments = arguments::parse_arguments(args);
 
-    let options: options::Options;
-    match env_args.len() {
+    let options = options::get_options(arguments);
+
+    /*match env_args.len() {
         1 => {
             // no args, so look for default file
             match std::fs::File::open(DEFAULT_FILE_NAME) {
@@ -38,7 +37,7 @@ fn main() {
             // command line args
             options = get_args_from_args(env_args);
         }
-    }
+    }*/
 
     if options.verbose { eprintln!("{}", options); }
     let mut command = std::process::Command::new(options.program.as_str()); // program name
