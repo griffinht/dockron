@@ -4,14 +4,16 @@ pub struct Option {
 }
 pub struct Arguments {
     pub options: Vec<Option>,
-    pub argument: std::option::Option<String>,
+    pub argument: Vec<String>,
 }
 
 pub fn parse_arguments(raw_args: Vec<String>) -> Arguments {
     let mut options = Vec::new();
-    let mut i = 0;
-    while raw_args.len() > i {
-        let mut raw_arg = raw_args.get(i)
+    let mut raw_args = raw_args.iter().peekable();
+    loop {
+        let raw_arg = raw_args.peek();
+        if raw_arg.is_none() { break }
+        let mut raw_arg = raw_arg
             .unwrap()
             .chars();
         let arg;
@@ -40,15 +42,13 @@ pub fn parse_arguments(raw_args: Vec<String>) -> Arguments {
                 arg = raw_arg.collect::<String>();
             }
         }
-        i += 1;
+        raw_args.next();
         options.push(
             Option {
                 name: arg,
                 value:
-                if raw_args.len() > i {
-                    let value = raw_args.get(i).cloned();
-                    i += 1;
-                    value
+                if raw_args.peek().is_some() {
+                    raw_args.next().cloned()
                 } else {
                     None
                 }
@@ -56,10 +56,11 @@ pub fn parse_arguments(raw_args: Vec<String>) -> Arguments {
     }
     return Arguments { options,
         argument:
-        if raw_args.len() > 0 {
-            raw_args.get(i).cloned()
+        if raw_args.peek().is_some() {
+            //raw_args.next();
+            raw_args.cloned().collect()
         } else {
-            None
+            Vec::new()
         }
     };
 }

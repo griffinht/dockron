@@ -74,12 +74,12 @@ pub fn get_options(arguments: arguments::Arguments) -> Options {
             }
         }
     }
-    options.program = match arguments.argument{
-        Some(program) => program,
-        None => {
-            eprintln!("please specify a program to run or a file to read from");
-            std::process::exit(1)
-        }
-    };
+    let mut arguments = arguments.argument;
+    if arguments.len() == 0 {
+        eprintln!("please specify a program to run or a file to read from");
+        std::process::exit(1)
+    }
+    options.program = arguments.remove(0);
+    options.args = arguments;
     return options;
 }
