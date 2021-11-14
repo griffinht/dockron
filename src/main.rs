@@ -44,8 +44,12 @@ fn main() {
         Err(error) => { eprintln!("{}", error); std::process::exit(1); }
     };
     let ignore = matches.opt_present("i");
-    let program = "echo";
-    let arguments: Vec<String> = Vec::new();
+    let mut matches = matches;
+    let program: String = if matches.free.len() > 0 {
+        matches.free.remove(0)
+    } else { eprintln!("specify a program to run"); std::process::exit(1); };
+    let program = program.as_str();
+    let arguments: Vec<String> = matches.free;
 
     let mut command = std::process::Command::new(program); // program name
     let command = command.args(arguments);
