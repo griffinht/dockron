@@ -30,8 +30,8 @@ macro_rules! default_options {
 fn parse<F: std::str::FromStr>(str: String) -> F {
     return match str.parse() {
         Ok(result) => result,
-        Err(error) => {
-            eprintln!("error while parsing -d {} as integer\n{}", str, str);
+        Err(_error) => {
+            eprintln!("error while parsing -d {} as integer\n{}", str, str);//todo print error
             std::process::exit(1);
         }
     }

@@ -10,21 +10,39 @@ pub struct Arguments {
 pub fn parse_arguments(raw_args: Vec<String>) -> Arguments {
     let mut options = Vec::new();
     let mut i = 0;
-    loop {
-        if raw_args.len() == 0 { break }
+    while raw_args.len() < i {
         let mut raw_arg = raw_args.get(i)
             .unwrap()
             .chars();
         let arg;
-        if raw_arg.nth(0).unwrap() != '-' {
-            break
+        match raw_arg.next() {
+            None => { break; }
+            Some(char) => {
+                if char != '-' { break }
+            }
         }
-        if raw_arg.nth(1).unwrap() == '-' { // --arg to arg
-            arg = raw_arg.nth(2).unwrap();
-        } else {
-            arg = raw_arg.nth(1).unwrap(); // -arg to arg
+        match raw_arg.next() {
+            None => { break; }
+            Some(char) => {
+                if char == '-' {
+                    arg = match raw_arg.next() {
+                        None => {
+                            eprintln!("bad syntax -");
+                            std::process::exit(1);
+                        }
+                        Some(char) => char
+                    };
+                } else {
+                    arg = match raw_arg.next() {
+                        None => {
+                            eprintln!("bad syntax --");
+                            std::process::exit(1);
+                        }
+                        Some(char) => char
+                    };
+                }
+            }
         }
-
         options.push(
             Option {
                 name: arg.to_string(),
