@@ -1,56 +1,45 @@
-mod arguments;
-mod options;
+extern crate getopts;
 
 fn main() {
-    let mut args: Vec<String> = std::env::args().collect();
-    args.remove(0); // first arg is irrelevant?
-    let arguments = arguments::parse_arguments(args);
+    let arguments: Vec<String>;
 
-    let options = options::get_options(arguments);
+    arguments = std::env::args().collect();
 
-    /*match env_args.len() {
-        1 => {
-            // no args, so look for default file
-            match std::fs::File::open(DEFAULT_FILE_NAME) {
-                Ok(file) => {
-                    options = get_args_from_file(file);
-                },
-                Err(_error) => { // otherwise just try to run with command line arguments
-                    options = get_args_from_args(env_args);
-                }
-            };
-        }
-        2 => {
-            // dockron file specified, so look for that
-            let mut env_args = env_args;
-            let path = env_args.nth(1).unwrap();
-            let file = match std::fs::File::open(path.as_str()) {
-                Ok(file) => file,
-                Err(error) => {
-                    eprintln!("error while opening file {}\n{}", path, error);
-                    std::process::exit(1)
-                }
-            };
-            options = get_args_from_file(file);
-        }
-        _ => {
-            // command line args
-            options = get_args_from_args(env_args);
-        }
-    }*/
+    let mut options = getopts::Options::new();
 
-    if options.verbose { eprintln!("{}", options); }
-    let mut command = std::process::Command::new(options.program.as_str()); // program name
-    let command = command.args(options.args);
+    options.optopt("n", "", "how many times to run", "<integer>");
+    options.optopt("d", "delay", "delay of each run except for the first", "<milliseconds>");
+    options.optflag("v", "verbose", "verbose output, useful for debugging");
+    options.optflag("i", "ignore", "ignore non-zero exit codes and keep running");
+    let matches = match options.parse(&arguments[1..]) {
+        Ok(m) => m,
+        Err(error) => { eprintln!("{}", error); std::process::exit(1); }
+    };
+
+    let verbose = matches.opt_present("v");
+    let n = match matches.opt_get_default("n", 1) {
+        Ok(t) => t,
+        Err(error) => { eprintln!("{}", error); std::process::exit(1); }
+    };
+    let delay = match matches.opt_get_default("d", 0) {
+        Ok(t) => t,
+        Err(error) => { eprintln!("{}", error); std::process::exit(1); }
+    };
+    let ignore = matches.opt_present("i");
+    let program = "echo";
+    let arguments: Vec<String> = Vec::new();
+
+    let mut command = std::process::Command::new(program); // program name
+    let command = command.args(arguments);
     let mut i = 1;
     loop {
         // negative n should run infinitely
-        if options.n >= 0 && i > options.n { break }
-        if options.verbose { eprintln!("Running {}... ({}/{})", options.program, i, options.n) }
+        if n >= 0 && i > n { break }
+        if verbose { eprintln!("Running {}... ({}/{})", program, i, n) }
         let mut child = match command.spawn() {
             Ok(child) => child,
             Err(error) => {
-                eprintln!("error while spawning program {}\n{}", options.program, error.to_string());
+                eprintln!("error while spawning program {}\n{}", program, error.to_string());
                 std::process::exit(1)
             }
         };
@@ -60,19 +49,19 @@ fn main() {
             .unwrap();
 
         let code = status.code().unwrap();
-        if options.verbose { eprintln!("{} exited with code {}", options.program, code) }
+        if verbose { eprintln!("{} exited with code {}", program, code) }
 
-        if !options.ignore && code != 0 {
-            if options.verbose { eprintln!("Non-zero exit code, exiting... (-i to ignore non-zero exit codes)") }
+        if !ignore && code != 0 {
+            if verbose { eprintln!("Non-zero exit code, exiting... (-i to ignore non-zero exit codes)") }
             std::process::exit(code);
         }
 
-        if options.n < 0 || i < options.n {
-            if options.verbose { eprintln!("Waiting {}ms for next run...", options.delay) }
-            std::thread::sleep(std::time::Duration::from_millis(options.delay));
+        if n < 0 || i < n {
+            if verbose { eprintln!("Waiting {}ms for next run...", delay) }
+            std::thread::sleep(std::time::Duration::from_millis(delay));
         }
         i += 1;
     }
 
-    if options.verbose { eprintln!("Finished running {}", options.program) }
+    if verbose { eprintln!("Finished running {}", program) }
 }
