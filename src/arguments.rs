@@ -14,7 +14,7 @@ pub fn parse_arguments(raw_args: Vec<String>) -> Arguments {
         let mut raw_arg = raw_args.get(i)
             .unwrap()
             .chars();
-        let arg: &str;
+        let arg;
         match raw_arg.next() {
             None => { break; }
             Some(char) => {
@@ -22,23 +22,27 @@ pub fn parse_arguments(raw_args: Vec<String>) -> Arguments {
             }
         }
         // -
-        match raw_arg.next() {
+        let mut raw_arg = raw_arg.peekable();
+        match raw_arg.peek() {
             None => {
                 eprintln!("specify argument using -?");
                 std::process::exit(1);
             }
             Some(char) => {
-                if char == '-' // --
-                    && raw_arg.next().is_none() { // make sure there is something else
+                if *char == '-' { // --
+                    raw_arg.next();
+                    if raw_arg.peek().is_none() { // make sure there is something else
                         eprintln!("specify argument using --???");
                         std::process::exit(1);
+                    }
                 }
-                arg = raw_arg.as_str();
+
+                arg = raw_arg.collect::<String>();
             }
         }
         options.push(
             Option {
-                name: arg.parse().unwrap(),
+                name: arg,
                 value:
                 if raw_args.len() > 0 {
                     i += 1;
