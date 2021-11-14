@@ -14,18 +14,15 @@ impl std::fmt::Display for Options {
     }
 }
 
-macro_rules! default_options {
-    () => {
-        Options {
-            n: 1,
-            delay: 0,
-            verbose: false,
-            ignore: false,
-            program: String::new(),
-            args: Vec::new(),
-        };
-    }
-}
+const DEFAULT_OPTIONS: Options = Options {
+    n: 1,
+    delay: 0,
+    verbose: false,
+    ignore: false,
+    program: String::new(),
+    args: Vec::new(),
+};
+
 
 fn parse<F: std::str::FromStr>(str: String) -> F {
     return match str.parse() {
@@ -38,7 +35,7 @@ fn parse<F: std::str::FromStr>(str: String) -> F {
 }
 
 pub fn get_options(arguments: arguments::Arguments) -> Options {
-    let mut options = default_options!();
+    let mut options = DEFAULT_OPTIONS;
 
     for option in arguments.options {
         match option.name.as_str() {
