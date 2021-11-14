@@ -10,42 +10,35 @@ pub struct Arguments {
 pub fn parse_arguments(raw_args: Vec<String>) -> Arguments {
     let mut options = Vec::new();
     let mut i = 0;
-    while raw_args.len() < i {
+    while raw_args.len() > i {
         let mut raw_arg = raw_args.get(i)
             .unwrap()
             .chars();
-        let arg;
+        let arg: &str;
         match raw_arg.next() {
             None => { break; }
             Some(char) => {
                 if char != '-' { break }
             }
         }
+        // -
         match raw_arg.next() {
-            None => { break; }
+            None => {
+                eprintln!("specify argument using -?");
+                std::process::exit(1);
+            }
             Some(char) => {
-                if char == '-' {
-                    arg = match raw_arg.next() {
-                        None => {
-                            eprintln!("bad syntax -");
-                            std::process::exit(1);
-                        }
-                        Some(char) => char
-                    };
-                } else {
-                    arg = match raw_arg.next() {
-                        None => {
-                            eprintln!("bad syntax --");
-                            std::process::exit(1);
-                        }
-                        Some(char) => char
-                    };
+                if char == '-' // --
+                    && raw_arg.next().is_none() { // make sure there is something else
+                        eprintln!("specify argument using --???");
+                        std::process::exit(1);
                 }
+                arg = raw_arg.as_str();
             }
         }
         options.push(
             Option {
-                name: arg.to_string(),
+                name: arg.parse().unwrap(),
                 value:
                 if raw_args.len() > 0 {
                     i += 1;
