@@ -16,6 +16,7 @@ fn main() {
     options.optopt("d", "delay", "delay of each run except for the first", "<milliseconds>");
     options.optflag("", "verbose", "verbose output, useful for debugging");
     options.optflag("i", "ignore", "ignore non-zero exit codes and keep running");
+    options.parsing_style(getopts::ParsingStyle::StopAtFirstFree);
     let matches = match options.parse(&arguments[1..]) {
         Ok(m) => m,
         Err(error) => { eprintln!("{}", error); std::process::exit(1); }
