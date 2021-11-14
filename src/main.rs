@@ -16,6 +16,7 @@ fn main() {
     options.optopt("d", "delay", "delay of each run except for the first", "<milliseconds>");
     options.optflag("", "verbose", "verbose output, useful for debugging");
     options.optflag("i", "ignore", "ignore non-zero exit codes and keep running");
+    options.optflag("f", "file", "read arguments from file");
     options.parsing_style(getopts::ParsingStyle::StopAtFirstFree);
     let matches = match options.parse(&arguments[1..]) {
         Ok(m) => m,
@@ -25,7 +26,8 @@ fn main() {
     if matches.opt_present("h") {
         eprint!("{}", options.usage_with_format(|opts| {
             format!(
-                "Usage: dockron [options...] <command>\n{}\n",
+                "Usage: {} [options...] <command>\n{}\n",
+                NAME,
                 opts.collect::<Vec<String>>().join("\n")
             )
         }));
@@ -35,7 +37,36 @@ fn main() {
         eprintln!("{} version {}", NAME, VERSION);
         return;
     }
-    let verbose = matches.opt_present("v");
+    let verbose = matches.opt_present("verbose");
+    if matches.opt_present("f") {
+        let file = match std::fs::File::open(matches.opt_get::<String>("f").unwrap().unwrap()) {
+            Ok(file) => file,
+            Err(error) => { panic!("{}", error) }
+        };
+        eprintln!("{}", file.metadata().unwrap().len());
+    } else {
+        let mut found_path: Option<std::fs::DirEntry> = None;
+        let mut duplicate = false;
+        for path in std::fs::read_dir("./").unwrap() {
+            let path = path.unwrap();
+            if path.file_name().into_string().unwrap().contains(NAME) {
+                if found_path.is_some() {
+                    duplicate = true;
+                    break;
+                }
+
+                found_path = Some(path);
+            }
+        }
+        if duplicate {
+            if verbose {
+                eprintln!("warning: multiple {} files found", NAME);
+            }
+        } else if found_path.is_some() {
+            let found_path = found_path.unwrap();
+            eprintln!("found {}", found_path.file_name().into_string().unwrap());
+        }
+    }
     let n = match matches.opt_get_default("n", 1) {
         Ok(t) => t,
         Err(error) => { eprintln!("{}", error); std::process::exit(1); }
