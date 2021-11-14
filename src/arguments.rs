@@ -40,18 +40,19 @@ pub fn parse_arguments(raw_args: Vec<String>) -> Arguments {
                 arg = raw_arg.collect::<String>();
             }
         }
+        i += 1;
         options.push(
             Option {
                 name: arg,
                 value:
-                if raw_args.len() > 0 {
+                if raw_args.len() > i {
+                    let value = raw_args.get(i).cloned();
                     i += 1;
-                    raw_args.get(i + 1).cloned()
+                    value
                 } else {
                     None
                 }
             });
-        i += 1;
     }
     return Arguments { options,
         argument:
