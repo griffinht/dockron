@@ -69,7 +69,7 @@ pub fn get_options(arguments: arguments::Arguments) -> Options {
                 options.ignore = true;
             }
             _=> {
-                eprintln!("unknown argument {}", option.name);
+                eprintln!("unknown option {}", option.name);
                 std::process::exit(1);
             }
         }
