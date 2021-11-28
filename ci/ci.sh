@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+
+IMAGE=$1
+DOCKER_REGISTRY_USER=$2
+DOCKER_REGISTRY_PASSWORD=$3
+
+
+./ci/docker/build-and-push.sh "$IMAGE" "$DOCKER_REGISTRY_USER" "$DOCKER_REGISTRY_PASSWORD"
